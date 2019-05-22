@@ -11,6 +11,9 @@ def cmd(s):
     if ret != 0:
         raise ValueError(ret)
 
+def get_battery_level():
+    cmd("gphoto2 --get-config /main/status/batterylevel | grep -E '(Label|Current)'")
+
 def capture_many(n):
     captured = 0
     while True:
@@ -27,6 +30,9 @@ def capture_many(n):
 
         if captured == n:
             break
+
+        if captured % 10 == 0:
+            get_battery_level()
 
 def main():
     # TODO: I saw this output:
@@ -59,3 +65,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+
