@@ -11,16 +11,11 @@ def cmd(s):
     if ret != 0:
         raise ValueError(ret)
 
-
-def main():
-    # XXX: set drive mode to single, no delay (autoscatto off)
-    
-    NUM = int(sys.argv[1])
-    cmd('gphoto2 --set-config capturetarget=1')
+def capture_many(n):
     captured = 0
     while True:
         print
-        print 'capture %d/%d' % (captured+1, NUM)
+        print 'capture %d/%d' % (captured+1, n)
         try:
             cmd('gphoto2 --capture-image')
         except ValueError:
@@ -30,8 +25,31 @@ def main():
         else:
             captured += 1
 
-        if captured == NUM:
+        if captured == n:
             break
+
+def main():
+    # TODO: I saw this output:
+    """
+    capture 102/200
+    ERROR: Could not capture image.
+    ERROR: Could not capture.
+
+    capture 103/200
+
+    *** Error ***
+    Canon EOS M Full-Press failed (0x2019: PTP Device Busy)
+    ERROR: Could not capture image.
+    ERROR: Could not capture.
+    *** Error (-110: 'I/O in progress') ***
+    """
+    # It means that capture 102 was NOT done, but the retvalue was still 0. We
+    # need a better way to check for errors
+
+    NUM = int(sys.argv[1])
+    cmd('gphoto2 --set-config /main/capturesettings/drivemode=0') # 0 ==> single
+    cmd('gphoto2 --set-config capturetarget=1')
+    capture_many(NUM)
 
     print
     print
