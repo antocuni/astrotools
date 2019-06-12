@@ -34,7 +34,7 @@ def sort_jpg():
     root = py.path.local('.')
     for jpg in root.listdir('*.JPG'):
         info = load_info(jpg)
-        target_dir = root.join('iso %s - %ss - F%s' % (info[1:]))
+        target_dir = root.join('iso%s-%ss-F%s' % (info[1:]))
         target_dir.ensure(dir=True)
         move(jpg, target_dir)
         cr3 = jpg.new(ext='CR3')
