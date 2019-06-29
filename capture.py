@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-# USAGE: ./capture.py NUM_PHOTOS
+# USAGE: ./capture.py NUM_PHOTOS [bulb_speed]
 
 import sys
 import os
@@ -11,31 +11,44 @@ def cmd(s):
     if ret != 0:
         raise ValueError(ret)
 
+def set_config(x):
+    cmd('gphoto2 --set-config %s | cat' % x)
 
 class Camera(object):
 
     def __init__(self):
         print "Setting capturetarget to SD"
-        cmd('gphoto2 --set-config capturetarget=1 | cat')
+        set_config("capturetarget=1")
 
-    def capture_many(self, n):
+    def capture_many(self, n, shutterspeed=None):
         print "Setting drivemode to single"
-        cmd('gphoto2 --set-config /main/capturesettings/drivemode=0 | cat')
-        self._do_n_captures(n)
+        set_config('/main/capturesettings/drivemode=0')
+        if shutterspeed is not None:
+            print "Setting shutterspeed to bulb"
+            set_config('/main/capturesettings/shutterspeed=bulb')
+        self._do_many_captures(n, shutterspeed)
 
     def get_battery_level(self):
         cmd("gphoto2 --get-config /main/status/batterylevel | grep -E '(Label|Current)'")
 
-    def _do_one_capture(self):
-        cmd('gphoto2 --capture-image | cat')
+    def _do_one_bulb(self, shutterspeed):
+        cmd("gphoto2 "
+            "--set-config eosremoterelease=Immediate "
+            "--wait-event=%ss "
+            "--set-config eosremoterelease='Release Full' "
+            "--wait-event=2s "
+            " | grep -v UNKNOWN " % shutterspeed)
 
-    def _do_n_captures(self, n):
+    def _do_many_captures(self, n, shutterspeed):
         captured = 0
         while True:
             print
             print 'capture %d/%d' % (captured+1, n)
             try:
-                self._do_one_capture()
+                if shutterspeed is None:
+                    cmd('gphoto2 --capture-image | cat')
+                else:
+                    self._do_one_bulb(shutterspeed)
             except ValueError:
                 print ('Error when executing gphoto2, '
                        'sleeping some seconds before retrying')
@@ -68,9 +81,19 @@ def main():
     # It means that capture 102 was NOT done, but the retvalue was still 0. We
     # need a better way to check for errors
 
-    n = int(sys.argv[1])
+    # 
+    if len(sys.argv) == 3:
+        n = int(sys.argv[1])
+        shutterspeed = int(sys.argv[2])
+    elif len(sys.argv) == 2:
+        n = int(sys.argv[1])
+        shutterspeed = None
+    else:
+        print "Usage: ./capture.py N [shutterspeed]"
+        sys.exit(1)
+
     cam = Camera()
-    cam.capture_many(n)
+    cam.capture_many(n, shutterspeed)
     print
     print
     print '===================='
