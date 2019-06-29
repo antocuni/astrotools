@@ -20,7 +20,7 @@ def capture_many(n):
         print
         print 'capture %d/%d' % (captured+1, n)
         try:
-            cmd('gphoto2 --capture-image')
+            cmd('gphoto2 --capture-image | cat')
         except ValueError:
             print 'Error when executing gphoto2, sleeping some seconds before retrying'
             time.sleep(5)
