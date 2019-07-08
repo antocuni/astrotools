@@ -5,6 +5,7 @@ Usage: manage_raws.py [DIR] [options]
 
 Options:
   --move        Create directories for each exposure value and move files there
+  --round-ss    Round shutter speed to the closest 10s (e.g. 88s => 90s)
   -v --verbose  Show the individual files in the summary
   -h --help     show this
 """
@@ -26,10 +27,12 @@ def load_exif(fname):
 def divide(r):
     return float(r.num)/r.den
 
-def load_info(fname):
+def load_info(fname, round_ss):
     tags = load_exif(fname)
     iso = tags['EXIF ISOSpeedRatings'].values[0]
     shutter_speed = divide(tags['EXIF ExposureTime'].values[0])
+    if round_ss:
+        shutter_speed = round(shutter_speed, -1)
     f = divide(tags['EXIF FNumber'].values[0])
     return Info(iso, shutter_speed, f)
 
@@ -42,11 +45,11 @@ def print_tags(tags):
 def move(src, dst):
     shutil.move(str(src), str(dst))
 
-def summarize_jpg(root, verbose):
+def summarize_jpg(root, verbose, round_ss):
     root = py.path.local(root)
     infodict = defaultdict(list)
     for jpg in root.visit('*.JPG'):
-        info = load_info(jpg)
+        info = load_info(jpg, round_ss)
         infodict[info].append(jpg)
     #
     items = infodict.items()
@@ -76,7 +79,7 @@ def sort_jpg(root):
 def main():
     args = docopt.docopt(__doc__)
     d = args['DIR'] or '.'
-    summarize_jpg(d, args['--verbose'])
+    summarize_jpg(d, args['--verbose'], args['--round-ss'])
     if args['--move']:
         sort_jpg(d)
 
