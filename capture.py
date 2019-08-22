@@ -19,10 +19,10 @@ class Camera(object):
     def __init__(self):
         print "Setting capturetarget to SD"
         set_config("capturetarget=1")
-
-    def capture_many(self, n, shutterspeed=None):
         print "Setting drivemode to single"
         set_config('/main/capturesettings/drivemode=0')
+
+    def capture_many(self, n, shutterspeed=None):
         if shutterspeed is not None:
             print "Setting shutterspeed to bulb"
             set_config('/main/capturesettings/shutterspeed=bulb')
@@ -49,6 +49,7 @@ class Camera(object):
                     cmd('gphoto2 --capture-image | cat')
                 else:
                     self._do_one_bulb(shutterspeed)
+                    time.sleep(5)
             except ValueError:
                 print ('Error when executing gphoto2, '
                        'sleeping some seconds before retrying')
