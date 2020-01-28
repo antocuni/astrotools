@@ -74,6 +74,8 @@ class BaseCamera(object):
             print 'capture %d/%d' % (captured+1, n)
             try:
                 if shutterspeed is None:
+                    # XXX: if/when we switch to --capture-image-and-download,
+                    # make sure to investigate whether we need --keep
                     cmd('gphoto2 --capture-image | cat')
                 else:
                     self.do_one_bulb(shutterspeed)
@@ -98,6 +100,9 @@ class CanonCamera(BaseCamera):
     Tested with Canon EOS M50
     """
 
+    # XXX how to find this programmatically?
+    CAMERA_FOLDER = '/store_00020001/DCIM/100CANON/'
+
     def set_drivemode(self):
         print "Setting drivemode to single"
         set_config('/main/capturesettings/drivemode=0')
@@ -120,13 +125,11 @@ class CanonCamera(BaseCamera):
         self.download_images()
 
     def download_images(self):
-        # XXX how to find this programmatically?
-        CAMERA_FOLDER = '/store_00020001/DCIM/100CANON/'
         print 'Downloading new images...'
         for cr3 in self.capture_dir.listdir('*.CR3'):
             print 'Found %s' % cr3
             jpg = cr3.new(ext='JPG')
-            cmd("gphoto2 -f %s --get-file %s" % (CAMERA_FOLDER, jpg.basename))
+            cmd("gphoto2 -f %s --get-file %s" % (self.CAMERA_FOLDER, jpg.basename))
             cr3.remove()
 
 
