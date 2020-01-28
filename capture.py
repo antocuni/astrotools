@@ -6,6 +6,7 @@ import sys
 import os
 import commands
 import time
+import py
 
 def cmd(s):
     ret = os.system(s)
@@ -17,7 +18,11 @@ def set_config(x):
 
 class BaseCamera(object):
 
-    def __init__(self, model):
+    def __init__(self, model, capture_dir='/tmp/images/'):
+        self.capture_dir = py.path.local(capture_dir)
+        print 'cd %s' % self.capture_dir
+        self.capture_dir.ensure(dir=True)
+        self.capture_dir.chdir()
         print "Camera is:", model
         print "Setting capturetarget to SD"
         set_config("capturetarget=1")
@@ -101,13 +106,29 @@ class CanonCamera(BaseCamera):
         print "Setting shutterspeed to bulb"
         set_config('/main/capturesettings/shutterspeed=bulb')
 
-    def do_one_bulb(self, shutterspeed):
+    def do_one_bulb(self, shutterspeed, download=True):
+        if download:
+            wait = '--wait-event-and-download=2s --keep'
+        else:
+            wait = '--wait-event=2s'
         cmd("gphoto2 "
             "--set-config eosremoterelease=Immediate "
             "--wait-event=%ss "
             "--set-config eosremoterelease='Release Full' "
-            "--wait-event=2s "
-            " | grep -v UNKNOWN " % shutterspeed)
+            "%s "
+            " | grep -v UNKNOWN " % (shutterspeed, wait))
+        self.download_images()
+
+    def download_images(self):
+        # XXX how to find this programmatically?
+        CAMERA_FOLDER = '/store_00020001/DCIM/100CANON/'
+        print 'Downloading new images...'
+        for cr3 in self.capture_dir.listdir('*.CR3'):
+            print 'Found %s' % cr3
+            jpg = cr3.new(ext='JPG')
+            cmd("gphoto2 -f %s --get-file %s" % (CAMERA_FOLDER, jpg.basename))
+            cr3.remove()
+
 
 class NikonCamera(BaseCamera):
     """
