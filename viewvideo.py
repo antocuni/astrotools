@@ -15,12 +15,15 @@ class VideoFile(object):
             return None
         return frame
 
-    def getframe(self, n):
+    def get_frame(self, n):
         """
         Read the frame number n
         """
         self.cap.set(cv2.CAP_PROP_POS_FRAMES, n)
         return self.read()
+
+    def get_frame_count(self):
+        return int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
     def close(self):
         self.cap.release()
@@ -35,8 +38,11 @@ class VideoFile(object):
 def main():
     fname = sys.argv[1]
     with VideoFile(fname) as cap:
-        for i in range(1000):
-            frame = cap.getframe(i)
+        N = cap.get_frame_count()
+        print('Frame count: %d' % N)
+
+        for i in range(N):
+            frame = cap.get_frame(i)
             if frame is None:
                 break
 
