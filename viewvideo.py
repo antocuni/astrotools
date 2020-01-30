@@ -75,11 +75,11 @@ class MyViewer(object):
         curframe = self.curframe
         frame = self.cap.get_frame(curframe)
         assert frame is not None
-        frame64 = frame.astype(np.float64)
+        frame32 = frame.astype(np.uint32)
         for i in range(self.delta):
-            frame64 += self.cap.get_frame(curframe+i)
-        frame64 /= self.delta+1
-        frame = frame64.astype(np.uint8)
+            frame32 += self.cap.get_frame(curframe+i)
+        frame32 = frame32 / (self.delta+1)
+        frame = frame32.astype(np.uint8)
         end = time.time()
         print('Time to stack %d frames: %.2f ms' % (self.delta, ((end-start)*1000)))
         #
