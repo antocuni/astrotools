@@ -1,6 +1,7 @@
 import sys
 import cv2
 import numpy as np
+import time
 
 class VideoFile(object):
 
@@ -69,16 +70,18 @@ class MyViewer(object):
                     break
 
     def update(self, val=None):
+        start = time.time()
         # average all the frames from curframe to curframe+delta
         curframe = self.curframe
         frame = self.cap.get_frame(curframe)
         assert frame is not None
         frame64 = frame.astype(np.float64)
         for i in range(self.delta):
-            newframe64 = self.cap.get_frame(curframe+i).astype(np.float64)
-            frame64 += newframe64
+            frame64 += self.cap.get_frame(curframe+i)
         frame64 /= self.delta+1
         frame = frame64.astype(np.uint8)
+        end = time.time()
+        print('Time to stack %d frames: %.2f ms' % (self.delta, ((end-start)*1000)))
         #
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         cv2.imshow(self.title, gray)
