@@ -44,12 +44,17 @@ class MyViewer(object):
         cv2.namedWindow(self.title)
         cv2.createTrackbar('Frame', self.title , 0, self.cap.get_frame_count(), self.on_frame)
 
+    def is_window_visible(self):
+        # I don't know why, but WND_PROP_VISIBLE does not seem to work :(
+        return cv2.getWindowProperty(self.title, cv2.WND_PROP_AUTOSIZE) == 1
+
     def run(self):
         fps = 25.0 # seconds
         ms_delay = int(1000/fps) # milliseconds per frame
         with self.cap:
             self.on_frame(0)
-            while True:
+            # loop until the window is closed
+            while self.is_window_visible():
                 ch = chr(cv2.waitKey(ms_delay) & 0xFF)
                 if ch == 'q':
                     break
