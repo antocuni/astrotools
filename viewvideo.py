@@ -77,7 +77,7 @@ class MyViewer(object):
         assert frame is not None
         frame32 = frame.astype(np.uint32)
         for i in range(self.delta):
-            frame32 += self.cap.get_frame(curframe+i)
+            frame32 += self.cap.read()
         frame32 = frame32 / (self.delta+1)
         frame = frame32.astype(np.uint8)
         end = time.time()
