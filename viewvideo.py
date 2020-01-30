@@ -42,7 +42,16 @@ class MyViewer(object):
         self.title = fname
         self.cap = VideoFile(fname)
         cv2.namedWindow(self.title)
-        cv2.createTrackbar('Frame', self.title , 0, self.cap.get_frame_count(), self.on_frame)
+        cv2.createTrackbar('Frame', self.title , 0, self.cap.get_frame_count(), self.update)
+        cv2.createTrackbar('Delta', self.title , 0, 1000, self.update)
+
+    @property
+    def curframe(self):
+        return cv2.getTrackbarPos('Frame', self.title)
+
+    @property
+    def delta(self):
+        return cv2.getTrackbarPos('Delta', self.title)
 
     def is_window_visible(self):
         # I don't know why, but WND_PROP_VISIBLE does not seem to work :(
@@ -52,16 +61,25 @@ class MyViewer(object):
         fps = 25.0 # seconds
         ms_delay = int(1000/fps) # milliseconds per frame
         with self.cap:
-            self.on_frame(0)
+            self.update()
             # loop until the window is closed
             while self.is_window_visible():
                 ch = chr(cv2.waitKey(ms_delay) & 0xFF)
                 if ch == 'q':
                     break
 
-    def on_frame(self, n):
-        frame = self.cap.get_frame(n)
+    def update(self, val=None):
+        # average all the frames from curframe to curframe+delta
+        curframe = self.curframe
+        frame = self.cap.get_frame(curframe)
         assert frame is not None
+        frame64 = frame.astype(np.float64)
+        for i in range(self.delta):
+            newframe64 = self.cap.get_frame(curframe+i).astype(np.float64)
+            frame64 += newframe64
+        frame64 /= self.delta+1
+        frame = frame64.astype(np.uint8)
+        #
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         cv2.imshow(self.title, gray)
 
