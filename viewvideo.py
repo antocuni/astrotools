@@ -3,6 +3,15 @@ import cv2
 import numpy as np
 import time
 
+
+"""
+to crop the images with ffmpeg (before using with this program)
+ffmpeg -i ~/tmp/DSC_0569.MOV -filter:v "crop=300:400:570:300" out.mp4
+"""
+
+SCALE = 6
+#SCALE = 1
+
 class VideoFile(object):
 
     def __init__(self, filename):
@@ -44,7 +53,8 @@ class MyViewer(object):
         self.cap = VideoFile(fname)
         cv2.namedWindow(self.title)
         cv2.createTrackbar('Frame', self.title , 0, self.cap.get_frame_count(), self.update)
-        cv2.createTrackbar('Delta', self.title , 0, 1000, self.update)
+        cv2.createTrackbar('Delta', self.title , 0, 20000, self.update)
+        cv2.setMouseCallback(self.title, self.on_click)
 
     @property
     def curframe(self):
@@ -74,7 +84,8 @@ class MyViewer(object):
         # average all the frames from curframe to curframe+delta
         curframe = self.curframe
         frame = self.cap.get_frame(curframe)
-        assert frame is not None
+        if frame is None:
+            return
         frame32 = frame.astype(np.uint32)
         for i in range(self.delta):
             frame32 += self.cap.read()
@@ -84,8 +95,12 @@ class MyViewer(object):
         print('Time to stack %d frames: %.2f ms' % (self.delta, ((end-start)*1000)))
         #
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        cv2.imshow(self.title, gray)
+        big = cv2.resize(gray, None, fx=SCALE, fy=SCALE, interpolation= cv2.INTER_LINEAR)
+        cv2.imshow(self.title, big)
 
+    def on_click(self, event, x, y, flags, param):
+	if event == cv2.EVENT_LBUTTONDOWN:
+	    print x, y
 
 
 
