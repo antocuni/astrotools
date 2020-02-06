@@ -16,40 +16,50 @@ def rotate(point, radians, origin=(0, 0)):
 
 SKY_ROT_SPEED = (np.pi*2)/(60*60*24) # 360 deg / 24h, radians/s
 
+class CvTrackbar(object):
+
+    def __init__(self, name, win, min, max, callback, default=None):
+        self.name = name
+        self.win = win
+        cv2.createTrackbar(name, win, min, max, callback)
+        if default is not None:
+            self.value = default
+
+    @property
+    def value(self):
+        return cv2.getTrackbarPos(self.name, self.win)
+
+    @value.setter
+    def value(self, v):
+        cv2.setTrackbarPos(self.name, self.win, v)
+
 class Sky(object):
 
     def __init__(self):
-        self.north_pole = (500, 500)
         cv2.namedWindow("sky")
-        cv2.createTrackbar('tracker', 'sky', 0, 200, self.update)
-        cv2.createTrackbar('speed', 'sky', 50, 150, self.update)
-        cv2.createTrackbar('t', 'sky', 0, 10, self.update)
-        cv2.setTrackbarPos('tracker', 'sky', 100)
-        cv2.setTrackbarPos('speed', 'sky', 100)
-        cv2.setTrackbarPos('t', 'sky', 1)
+        self.ready = False
+        self.north_pole = (500, 500)
+        self.tracker = CvTrackbar('tracker', 'sky', 0, 200, self.update, default=100)
+        self.speed = CvTrackbar('speed', 'sky', 50, 150, self.update, default=100)
+        self.t = CvTrackbar('t', 'sky', 0, 10, self.update, default=1)
+        self.ready = True
 
-    @property
-    def tracker(self):
-        delta = cv2.getTrackbarPos('tracker', 'sky') - 100
+    def get_tracker_pos(self):
+        delta = self.tracker.value - 100
         ox, oy = self.north_pole
         return ox+delta, oy+delta
 
-    @property
-    def speed(self):
-        return cv2.getTrackbarPos('speed', 'sky')
-
-    @property
-    def t(self):
-        return cv2.getTrackbarPos('t', 'sky')
-
     def update(self, val=None):
+        if not self.ready:
+            return
+
         sky = np.zeros(shape=[1000, 1000, 3], dtype=np.uint8)
-        tracker = self.tracker
-        speed = self.speed/100.0
+        tracker = self.get_tracker_pos()
+        speed = self.speed.value / 100.0
         sky[self.north_pole] = [255, 255, 255]
         sky[tracker] = [255, 255, 0]
         P = (200, 200)
-        t = np.pi * self.t * 10
+        t = np.pi * self.t.value * 10
         for angle in np.arange(0, t, 0.1):
             x, y = rotate(P, angle, self.north_pole)
             x2, y2 = rotate((x, y), -angle*speed, tracker)
