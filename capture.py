@@ -153,7 +153,7 @@ class NikonCamera(BaseCamera):
         # gphoto2 disconnects
         cmd("gphoto2 "
             "--set-config /main/actions/bulb=1 "
-            "--wait-event=%ss "
+            "--wait-event-and-download=%ss "
             " | grep -v UNKNOWN " % shutterspeed)
 
 
