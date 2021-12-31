@@ -59,26 +59,28 @@ class BaseCamera(object):
     def do_one_bulb(self):
         raise NotImplementedError
 
-    def capture_many(self, n, shutterspeed=None):
+    def capture_many(self, n, shutterspeed=None, download_every=10):
         if shutterspeed is not None:
             self.set_shutterspeed_to_bulb()
-        self._do_many_captures(n, shutterspeed)
+        self._do_many_captures(n, shutterspeed, download_every)
 
     def get_battery_level(self):
         cmd("gphoto2 --get-config /main/status/batterylevel | grep -E '(Label|Current)'")
 
-    def _do_many_captures(self, n, shutterspeed):
+    def _do_many_captures(self, n, shutterspeed, download_every=10):
         captured = 0
         while True:
+            download = (captured % download_every == 0)
             print
-            print 'capture %d/%d' % (captured+1, n)
+            print 'capture %d/%d, download=%s' % (captured+1, n, download)
             try:
                 if shutterspeed is None:
-                    # XXX: if/when we switch to --capture-image-and-download,
-                    # make sure to investigate whether we need --keep
-                    cmd('gphoto2 --capture-image | cat')
+                    if download:
+                        cmd('gphoto2 --capture-image-and-download --keep | cat')
+                    else:
+                        cmd('gphoto2 --capture-image | cat')
                 else:
-                    self.do_one_bulb(shutterspeed)
+                    self.do_one_bulb(shutterspeed, download)
                     time.sleep(5)
             except ValueError:
                 print ('Error when executing gphoto2, '
@@ -94,13 +96,13 @@ class BaseCamera(object):
             if captured % 10 == 0:
                 self.get_battery_level()
 
-
 class CanonCamera(BaseCamera):
     """
     Tested with Canon EOS M50
     """
 
-    # XXX how to find this programmatically?
+    # XXX find this programmatically:
+    #    gphoto2 --list-folders
     CAMERA_FOLDER = '/store_00020001/DCIM/100CANON/'
 
     def set_drivemode(self):
@@ -147,7 +149,7 @@ class NikonCamera(BaseCamera):
         print "Setting shutterspeed to bulb"
         set_config('/main/capturesettings/shutterspeed=Bulb')
 
-    def do_one_bulb(self, shutterspeed):
+    def do_one_bulb(self, shutterspeed, download='not supported'):
         # apparently, with the nikon DSC5300 it is enough to set bulb=1 to start
         # the capture. Then the camure will stop the capture automatically when
         # gphoto2 disconnects
